@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Летняя школа НИУ ВШЭ — Анализ финансовых рядов на Python</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #06080d;
+  --bg2: #0c1018;
+  --surface: #111827;
+  --surface2: #1a2236;
+  --accent: #00e5a0;
+  --accent2: #00c7ff;
+  --accent3: #7c5cff;
+  --text: #e8ecf4;
+  --text-dim: #7a8599;
+  --text-muted: #4a5568;
+  --glow: rgba(0, 229, 160, 0.15);
+  --glow2: rgba(0, 199, 255, 0.1);
+  --radius: 16px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== CANVAS BACKGROUND ===== */
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ===== GRID OVERLAY ===== */
+.grid-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-image:
+    linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ===== NAV ===== */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(20px);
+  background: rgba(6, 8, 13, 0.7);
+  border-bottom: 1px solid rgba(0, 229, 160, 0.08);
+}
+
+.nav-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.nav-logo span { color: var(--text-dim); }
+
+.nav-links { display: flex; gap: 32px; }
+
+.nav-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.nav-links a:hover { color: var(--accent); }
+
+/* ===== HERO ===== */
+.hero {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 140px 60px 80px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 229, 160, 0.08);
+  border: 1px solid rgba(0, 229, 160, 0.2);
+  border-radius: 100px;
+  padding: 8px 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  width: fit-content;
+  margin-bottom: 40px;
+  animation: fadeSlideUp 0.8s ease both;
+}
+
+.hero-badge::before {
+  content: '';
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,229,160,0.4); }
+  50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(0,229,160,0); }
+}
+
+.hero h1 {
+  font-size: clamp(48px, 7vw, 96px);
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: -2px;
+  margin-bottom: 32px;
+  animation: fadeSlideUp 0.8s ease 0.15s both;
+}
+
+.hero h1 .gradient-text {
+  background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-size: clamp(18px, 2.2vw, 24px);
+  color: var(--text-dim);
+  max-width: 640px;
+  line-height: 1.6;
+  font-weight: 300;
+  margin-bottom: 48px;
+  animation: fadeSlideUp 0.8s ease 0.3s both;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  animation: fadeSlideUp 0.8s ease 0.45s both;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.meta-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.meta-value.accent { color: var(--accent); }
+
+.hero-cta {
+  margin-top: 52px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  animation: fadeSlideUp 0.8s ease 0.6s both;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 229, 160, 0.3);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  background: transparent;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,229,160,0.05);
+}
+
+/* ===== SECTIONS COMMON ===== */
+section {
+  position: relative;
+  z-index: 2;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 100px 60px;
+}
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 20px;
+  line-height: 1.15;
+}
+
+.section-desc {
+  font-size: 18px;
+  color: var(--text-dim);
+  max-width: 600px;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+/* ===== METHODS CARDS ===== */
+.methods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 24px;
+  margin-top: 64px;
+}
+
+.method-card {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  padding: 40px;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.method-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--card-accent), transparent);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.method-card:hover::before { opacity: 1; }
+
+.method-card:hover {
+  border-color: rgba(255,255,255,0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+.method-card:nth-child(1) { --card-accent: var(--accent); }
+.method-card:nth-child(2) { --card-accent: var(--accent2); }
+.method-card:nth-child(3) { --card-accent: var(--accent3); }
+
+.method-icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  font-size: 24px;
+  background: rgba(0,229,160,0.08);
+  border: 1px solid rgba(0,229,160,0.15);
+}
+
+.method-card:nth-child(2) .method-icon {
+  background: rgba(0,199,255,0.08);
+  border-color: rgba(0,199,255,0.15);
+}
+
+.method-card:nth-child(3) .method-icon {
+  background: rgba(124,92,255,0.08);
+  border-color: rgba(124,92,255,0.15);
+}
+
+.method-card h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -0.3px;
+}
+
+.method-card p {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.method-tag {
+  display: inline-block;
+  margin-top: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--card-accent);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 4px 12px;
+}
+
+/* ===== SCHEDULE ===== */
+.schedule-timeline {
+  margin-top: 64px;
+  position: relative;
+}
+
+.schedule-timeline::before {
+  content: '';
+  position: absolute;
+  left: 24px;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent), var(--accent2), var(--accent3), transparent);
+  border-radius: 2px;
+}
+
+.schedule-item {
+  display: flex;
+  gap: 40px;
+  padding: 28px 0;
+  position: relative;
+  align-items: flex-start;
+}
+
+.schedule-dot {
+  width: 50px;
+  min-width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  z-index: 1;
+}
+
+.schedule-content {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  flex: 1;
+  transition: border-color 0.3s;
+}
+
+.schedule-content:hover {
+  border-color: rgba(0,229,160,0.2);
+}
+
+.schedule-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.schedule-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.schedule-desc {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.schedule-type {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.type-lecture {
+  background: rgba(0,229,160,0.1);
+  color: var(--accent);
+}
+
+.type-practice {
+  background: rgba(0,199,255,0.1);
+  color: var(--accent2);
+}
+
+.type-hw {
+  background: rgba(124,92,255,0.1);
+  color: var(--accent3);
+}
+
+/* ===== INSTRUCTORS ===== */
+.instructors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 64px;
+}
+
+.instructor-card {
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius);
+  padding: 40px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.instructor-card:hover {
+  border-color: rgba(0,229,160,0.15);
+  transform: translateY(-2px);
+}
+
+.instructor-avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--bg);
+}
+
+.instructor-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.instructor-card .role {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ===== STATS BAR ===== */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  margin-top: 64px;
+  background: rgba(255,255,255,0.04);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.stat {
+  padding: 40px;
+  text-align: center;
+  background: var(--surface);
+}
+
+.stat-number {
+  font-size: 44px;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+/* ===== REQUIREMENTS ===== */
+.req-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.req-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 24px;
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+.req-icon {
+  font-size: 20px;
+  min-width: 40px; height: 40px;
+  background: rgba(0,229,160,0.08);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.req-item h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.req-item p {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ===== CTA SECTION ===== */
+.cta-section {
+  text-align: center;
+  padding: 120px 60px;
+}
+
+.cta-box {
+  background: linear-gradient(135deg, rgba(0,229,160,0.06), rgba(0,199,255,0.04), rgba(124,92,255,0.04));
+  border: 1px solid rgba(0,229,160,0.12);
+  border-radius: 24px;
+  padding: 80px 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-box::before {
+  content: '';
+  position: absolute;
+  top: -200px; right: -200px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,229,160,0.08), transparent 70%);
+  pointer-events: none;
+}
+
+.cta-box .section-title {
+  max-width: 700px;
+  margin: 0 auto 16px;
+}
+
+.cta-box .section-desc {
+  max-width: 500px;
+  margin: 0 auto 40px;
+  text-align: center;
+}
+
+.cta-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 15px;
+  color: var(--accent);
+  margin-bottom: 32px;
+  letter-spacing: 1px;
+}
+
+/* ===== FOOTER ===== */
+footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 40px 60px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+footer a {
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+footer a:hover { color: var(--accent); }
+
+/* ===== CODE SNIPPET DECORATION ===== */
+.code-float {
+  position: absolute;
+  right: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 2;
+  opacity: 0.3;
+  pointer-events: none;
+  white-space: pre;
+  animation: fadeSlideUp 1s ease 0.8s both;
+}
+
+.code-float .kw { color: var(--accent3); }
+.code-float .fn { color: var(--accent2); }
+.code-float .str { color: var(--accent); }
+.code-float .cm { color: var(--text-muted); }
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  nav { padding: 16px 24px; }
+  .nav-links { display: none; }
+  .hero { padding: 120px 24px 60px; }
+  section { padding: 60px 24px; }
+  .cta-section { padding: 60px 24px; }
+  .cta-box { padding: 48px 28px; }
+  .hero-meta { gap: 24px; }
+  .code-float { display: none; }
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .schedule-timeline::before { left: 14px; }
+  .schedule-dot { width: 30px; min-width: 30px; height: 30px; font-size: 11px; }
+  .schedule-item { gap: 20px; }
+  .schedule-content { padding: 20px; }
+  footer { padding: 32px 24px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="grid-overlay"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">HSE <span>// Summer School</span></div>
+  <div class="nav-links">
+    <a href="#methods">Методы</a>
+    <a href="#schedule">Расписание</a>
+    <a href="#instructors">Преподаватели</a>
+    <a href="#register">Регистрация</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-badge">Набор открыт · Апрель 2026</div>
+  <h1>
+    Анализ финансовых<br>
+    рядов <span class="gradient-text">на Python</span>
+  </h1>
+  <p class="hero-sub">
+    Летняя школа от ЦФИАНД НИУ ВШЭ. Три количественных метода анализа финансовых рядов — от сбора данных до построения и интерпретации моделей. Все занятия с кодом на Python.
+  </p>
+  <div class="hero-meta">
+    <div class="meta-item">
+      <span class="meta-label">Даты</span>
+      <span class="meta-value">2–18 апреля</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Формат</span>
+      <span class="meta-value">Онлайн</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Объём</span>
+      <span class="meta-value accent">36 ак. часов</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Язык</span>
+      <span class="meta-value">Python</span>
+    </div>
+  </div>
+  <div class="hero-cta">
+    <a href="https://forms.yandex.ru/u/69a43864eb6146559dd99bbc" target="_blank" class="btn-primary">Зарегистрироваться →</a>
+  </div>
+
+  <div class="code-float" aria-hidden="true">
+<span class="kw">import</span> yfinance <span class="kw">as</span> yf
+<span class="kw">from</span> statsmodels <span class="kw">import</span> tsa
+
+<span class="cm"># парсинг финансовых рядов</span>
+data = yf.<span class="fn">download</span>(<span class="str">"BTC-USD"</span>)
+sentiment = <span class="fn">build_index</span>(news)
+
+<span class="cm"># TVP-VAR модель</span>
+model = <span class="fn">TVP_VAR</span>(data, priors)
+regimes = <span class="fn">detect_regimes</span>(model)
+  </div>
+</header>
+
+<!-- METHODS -->
+<section id="methods">
+  <div class="section-label reveal">Что вы изучите</div>
+  <h2 class="section-title reveal">Три продвинутых<br>метода</h2>
+  <p class="section-desc reveal">Каждый метод — от теории до работающего кода. Вы не просто узнаете о них, а построите полный пайплайн анализа.</p>
+
+  <div class="methods-grid">
+    <div class="method-card reveal">
+      <div class="method-icon">⚡</div>
+      <h3>TVP-VAR и фильтр Калмана</h3>
+      <p>Модели с динамическими коэффициентами, которые адаптируются к рыночным условиям. Настройка гиперпараметров, визуализация и интерпретация — всё в Python.</p>
+      <span class="method-tag">Kalman Filter · Bayesian</span>
+    </div>
+    <div class="method-card reveal">
+      <div class="method-icon">📐</div>
+      <h3>Мультифрактальный анализ</h3>
+      <p>MF-DFA, экспонента Хёрста и энтропия Реньи. Измерьте долгую память рынка и характер флуктуаций временных рядов.</p>
+      <span class="method-tag">MF-DFA · Hurst · Rényi</span>
+    </div>
+    <div class="method-card reveal">
+      <div class="method-icon">🔄</div>
+      <h3>Модели переключения режимов</h3>
+      <p>Выделите спокойные и стрессовые фазы рынка. Добавьте сентимент как экзогенный сигнал и сравните regime-aware модель с baseline.</p>
+      <span class="method-tag">Markov Switching · Sentiment</span>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section>
+  <div class="stats-bar reveal">
+    <div class="stat">
+      <div class="stat-number">36</div>
+      <div class="stat-label">Академических часов</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">4</div>
+      <div class="stat-label">Лекции</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">3</div>
+      <div class="stat-label">Практикума</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">2</div>
+      <div class="stat-label">Домашних задания</div>
+    </div>
+  </div>
+</section>
+
+<!-- SCHEDULE -->
+<section id="schedule">
+  <div class="section-label reveal">Программа</div>
+  <h2 class="section-title reveal">Расписание школы</h2>
+  <p class="section-desc reveal">17 дней интенсивной работы с данными, моделями и кодом.</p>
+
+  <div class="schedule-timeline">
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">1</div>
+      <div class="schedule-content">
+        <div class="schedule-date">2 апреля · 18:30–21:30</div>
+        <div class="schedule-title">Вводная лекция</div>
+        <div class="schedule-desc">Исследовательский дизайн. Сбор финансовых и криптовалютных рядов через API и yfinance. Зачем нужны продвинутые методы.</div>
+        <span class="schedule-type type-lecture">Лекция</span>
+      </div>
+    </div>
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">2</div>
+      <div class="schedule-content">
+        <div class="schedule-date">4 апреля · 10:00–13:00</div>
+        <div class="schedule-title">Парсинг текстовых данных</div>
+        <div class="schedule-desc">RSS/API, web-scraping, извлечение сущностей, дедупликация. Построение sentiment-index и его агрегация по времени.</div>
+        <span class="schedule-type type-practice">Практикум</span>
+      </div>
+    </div>
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">3</div>
+      <div class="schedule-content">
+        <div class="schedule-date">4 апреля · 14:00–17:00</div>
+        <div class="schedule-title">Модель TVP-VAR</div>
+        <div class="schedule-desc">Динамические коэффициенты, Kalman filter, выбор лагов, ключевые настройки и ограничения модели.</div>
+        <span class="schedule-type type-lecture">Лекция</span>
+      </div>
+    </div>
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">4</div>
+      <div class="schedule-content">
+        <div class="schedule-date">7 апреля · 18:30–21:30</div>
+        <div class="schedule-title">TVP-VAR в Python</div>
+        <div class="schedule-desc">Разбор кода, настройка гиперпараметров, визуализация и интерпретация результатов.</div>
+        <span class="schedule-type type-practice">Практикум</span>
+      </div>
+    </div>
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">5</div>
+      <div class="schedule-content">
+        <div class="schedule-date">9 апреля · 18:30–21:30</div>
+        <div class="schedule-title">Сдача ДЗ-1</div>
+        <div class="schedule-desc">Парсинг данных, расчёт индекса сентимента, TVP-VAR моделирование, визуализация и объяснение результатов.</div>
+        <span class="schedule-type type-hw">Домашнее задание</span>
+      </div>
+    </div>
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">6</div>
+      <div class="schedule-content">
+        <div class="schedule-date">11 апреля · 10:00–13:00</div>
+        <div class="schedule-title">Мультифрактальный анализ</div>
+        <div class="schedule-desc">MF-DFA, экспонента Хёрста, энтропия Реньи. Прокси-показатели рыночной памяти и характер флуктуаций.</div>
+        <span class="schedule-type type-lecture">Лекция</span>
+      </div>
+    </div>
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">7</div>
+      <div class="schedule-content">
+        <div class="schedule-date">14 апреля · 18:30–21:30</div>
+        <div class="schedule-title">Модели переключения режимов</div>
+        <div class="schedule-desc">Построение режимов, сентимент как экзогенный сигнал, baseline vs regime-aware модели.</div>
+        <span class="schedule-type type-lecture">Лекция</span>
+      </div>
+    </div>
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">8</div>
+      <div class="schedule-content">
+        <div class="schedule-date">16 апреля · 18:30–21:30</div>
+        <div class="schedule-title">Сдача ДЗ-2</div>
+        <div class="schedule-desc">Мультифрактальные показатели, режимы, связь с сентиментом, сравнение настроек и сопоставление с литературой.</div>
+        <span class="schedule-type type-hw">Домашнее задание</span>
+      </div>
+    </div>
+
+    <div class="schedule-item reveal">
+      <div class="schedule-dot">✓</div>
+      <div class="schedule-content">
+        <div class="schedule-date">18 апреля · 10:00–13:00</div>
+        <div class="schedule-title">Зачёт — финальная презентация</div>
+        <div class="schedule-desc">Демонстрация полного пайплайна: тексты → сентимент → режимы → модель. Тюнинг, сравнение метрик, выводы.</div>
+        <span class="schedule-type type-practice">Защита проекта</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- INSTRUCTORS -->
+<section id="instructors">
+  <div class="section-label reveal">Кто ведёт</div>
+  <h2 class="section-title reveal">Преподаватели</h2>
+
+  <div class="instructors-grid">
+    <div class="instructor-card reveal">
+      <div class="instructor-avatar">АК</div>
+      <h3>Куркин А. В.</h3>
+      <p class="role">Лекции, практикумы и проверка домашних заданий. Ведёт основную часть программы.</p>
+    </div>
+    <div class="instructor-card reveal">
+      <div class="instructor-avatar">МФ</div>
+      <h3>Файзулин М. С.</h3>
+      <p class="role">Мультифрактальный анализ: лекция по MF-DFA, экспоненте Хёрста и энтропии Реньи.</p>
+    </div>
+  </div>
+</section>
+
+<!-- REQUIREMENTS -->
+<section>
+  <div class="section-label reveal">Для кого</div>
+  <h2 class="section-title reveal">Что нужно для участия</h2>
+
+  <div class="req-grid">
+    <div class="req-item reveal">
+      <div class="req-icon">🐍</div>
+      <div>
+        <h4>Python</h4>
+        <p>Уверенное владение основами: pandas, numpy, matplotlib</p>
+      </div>
+    </div>
+    <div class="req-item reveal">
+      <div class="req-icon">📊</div>
+      <div>
+        <h4>Статистика</h4>
+        <p>Базовые знания эконометрики и временных рядов</p>
+      </div>
+    </div>
+    <div class="req-item reveal">
+      <div class="req-icon">💡</div>
+      <div>
+        <h4>Мотивация</h4>
+        <p>Готовность работать с реальными данными и разбираться в методах</p>
+      </div>
+    </div>
+    <div class="req-item reveal">
+      <div class="req-icon">💻</div>
+      <div>
+        <h4>Компьютер</h4>
+        <p>Стабильный интернет и среда для Python (Jupyter / VS Code)</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="register">
+  <div class="cta-box reveal">
+    <div class="cta-date">02.04.2026 — 18.04.2026 · Онлайн</div>
+    <h2 class="section-title">Готовы перейти на<br>новый уровень?</h2>
+    <p class="section-desc">Заберите с собой код, навыки и полный исследовательский пайплайн — от сбора данных до интерпретации модели.</p>
+    <a href="https://forms.yandex.ru/u/69a43864eb6146559dd99bbc" target="_blank" class="btn-primary" style="margin: 0 auto;">Подать заявку →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>НИУ ВШЭ · Летняя школа 2026 · <a href="#">Политика конфиденциальности</a></p>
+</footer>
+
+<script>
+// ===== ANIMATED BACKGROUND: financial chart lines =====
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let w, h, lines = [];
+
+function resize() {
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class ChartLine {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.y = Math.random() * h;
+    this.x = -100;
+    this.speed = 0.5 + Math.random() * 1.5;
+    this.amplitude = 10 + Math.random() * 40;
+    this.frequency = 0.005 + Math.random() * 0.015;
+    this.phase = Math.random() * Math.PI * 2;
+    this.alpha = 0.05 + Math.random() * 0.12;
+    this.hue = [160, 190, 260][Math.floor(Math.random() * 3)];
+    this.points = [];
+  }
+  update() {
+    this.x += this.speed;
+    const py = this.y + Math.sin(this.x * this.frequency + this.phase) * this.amplitude;
+    this.points.push({ x: this.x, y: py });
+    if (this.points.length > 300) this.points.shift();
+    if (this.x > w + 100) this.reset();
+  }
+  draw() {
+    if (this.points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(this.points[0].x, this.points[0].y);
+    for (let i = 1; i < this.points.length; i++) {
+      ctx.lineTo(this.points[i].x, this.points[i].y);
+    }
+    ctx.strokeStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+for (let i = 0; i < 12; i++) {
+  const l = new ChartLine();
+  l.x = Math.random() * w;
+  for (let j = 0; j < 200; j++) l.update();
+  lines.push(l);
+}
+
+function animate() {
+  ctx.clearRect(0, 0, w, h);
+  lines.forEach(l => { l.update(); l.draw(); });
+  requestAnimationFrame(animate);
+}
+animate();
+
+// ===== SCROLL REVEAL =====
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('visible'), i * 80);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15 });
+reveals.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
